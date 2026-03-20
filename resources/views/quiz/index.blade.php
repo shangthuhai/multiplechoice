@@ -12,7 +12,10 @@
     <nav class="navbar navbar-dark bg-primary mb-4 shadow">
         <div class="container">
             <a class="navbar-brand fw-bold" href="/">MY QUIZ APP</a>
-            <a href="{{ route('quiz.create') }}" class="btn btn-light text-primary fw-bold">+ Tạo đề mới</a>
+            <div class="d-flex gap-2">
+                <a href="{{ route('quiz.results') }}" class="btn btn-outline-light fw-bold">Bài đã làm</a>
+                <a href="{{ route('quiz.create') }}" class="btn btn-light text-primary fw-bold">+ Tạo đề mới</a>
+            </div>
         </div>
     </nav>
 
@@ -22,6 +25,25 @@
         @endif
 
         <h3 class="mb-4 text-secondary">Danh sách bài thi hiện có</h3>
+
+        @if($recentResults->isNotEmpty())
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="mb-0">Bài bạn làm gần đây</h5>
+                        <a href="{{ route('quiz.results') }}" class="btn btn-sm btn-outline-primary">Xem tất cả</a>
+                    </div>
+                    <div class="list-group list-group-flush">
+                        @foreach($recentResults as $result)
+                            <a href="{{ route('quiz.review', $result->id) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                <span>{{ $result->quiz->title ?? 'Bài thi đã xóa' }}</span>
+                                <span class="badge bg-success">{{ $result->score }} / {{ $result->total_questions }}</span>
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        @endif
         
         <div class="row">
             @foreach($quizzes as $quiz)

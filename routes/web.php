@@ -23,3 +23,5 @@ Route::post('/quiz/store', [QuizController::class, 'store'])->name('quiz.store')
 Route::get('/quiz/{id}', [QuizController::class, 'show'])->name('quiz.show'); // Trang chờ (Lobby)
 Route::get('/quiz/{id}/take', [QuizController::class, 'take'])->name('quiz.take'); // Trang làm bài thực tế
 Route::post('/quiz/{id}/submit', [QuizController::class, 'submit'])->name('quiz.submit');
+Route::get('/my-results', [QuizController::class, 'results'])->name('quiz.results');
+Route::get('/my-results/{resultId}', [QuizController::class, 'review'])->name('quiz.review');

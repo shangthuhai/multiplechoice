@@ -20,4 +20,9 @@ class Question extends Model
     {
         return $this->hasMany(Option::class);
     }
+
+    public function correctOption()
+    {
+        return $this->hasOne(Option::class)->where('is_correct', true);
+    }
 }

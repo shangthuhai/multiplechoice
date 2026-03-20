@@ -8,13 +8,16 @@ use App\Models\Quiz;
 use App\Models\Question;
 use App\Models\Option;
 use App\Models\Result;
+use App\Models\ResultAnswer;
 
 class QuizController extends Controller
 {
     // 1. Trang chủ: Liệt kê danh sách đề thi
     public function index() {
         $quizzes = Quiz::withCount('questions')->orderByDesc('id')->get();
-        return view('quiz.index', compact('quizzes'));
+        $recentResults = $this->resultsQuery()->take(5)->get();
+
+        return view('quiz.index', compact('quizzes', 'recentResults'));
     }
 
     public function create() {
@@ -66,19 +69,95 @@ class QuizController extends Controller
         $total = $quiz->questions->count();
         $answers = $request->input('answers', []);
 
-        foreach ($quiz->questions as $question) {
-            $userOption = $answers[$question->id] ?? null;
-            $correct = $question->options->where('is_correct', 1)->first();
-            if ($correct && $userOption == $correct->id) $score++;
+        DB::beginTransaction();
+        try {
+            $result = Result::create([
+                'user_id' => auth()->id(),
+                'quiz_id' => $quiz->id,
+                'score' => 0,
+                'total_questions' => $total,
+            ]);
+
+            foreach ($quiz->questions as $question) {
+                $selectedOptionId = isset($answers[$question->id]) ? (int) $answers[$question->id] : null;
+                $correctOption = $question->options->firstWhere('is_correct', 1);
+                $isCorrect = $correctOption && $selectedOptionId === (int) $correctOption->id;
+
+                if ($isCorrect) {
+                    $score++;
+                }
+
+                ResultAnswer::create([
+                    'result_id' => $result->id,
+                    'question_id' => $question->id,
+                    'selected_option_id' => $selectedOptionId,
+                    'correct_option_id' => $correctOption?->id,
+                    'is_correct' => $isCorrect,
+                ]);
+            }
+
+            $result->update(['score' => $score]);
+
+            $sessionResultIds = session('quiz_result_ids', []);
+            array_unshift($sessionResultIds, $result->id);
+            session(['quiz_result_ids' => array_values(array_unique(array_slice($sessionResultIds, 0, 50)))]);
+
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return back()->withErrors(['msg' => 'Không thể nộp bài: ' . $e->getMessage()]);
         }
 
-        Result::create([
-            'user_id' => auth()->id(),
-            'quiz_id' => $quiz->id,
-            'score' => $score,
-            'total_questions' => $total
-        ]);
+        return redirect()
+            ->route('quiz.review', $result->id)
+            ->with('status', "Kết quả: Bạn đúng $score / $total câu!");
+    }
 
-        return redirect()->route('quiz.index')->with('status', "Kết quả: Bạn đúng $score / $total câu!");
+    public function results()
+    {
+        $results = $this->resultsQuery()->paginate(12);
+
+        return view('quiz.results', compact('results'));
+    }
+
+    public function review($resultId)
+    {
+        $result = Result::with([
+            'quiz.questions.options',
+            'answers.question',
+            'answers.selectedOption',
+            'answers.correctOption',
+        ])->findOrFail($resultId);
+
+        if (! $this->canViewResult($result)) {
+            abort(403, 'Bạn không có quyền xem bài làm này.');
+        }
+
+        $answersByQuestionId = $result->answers->keyBy('question_id');
+
+        return view('quiz.review', compact('result', 'answersByQuestionId'));
+    }
+
+    private function resultsQuery()
+    {
+        $query = Result::with('quiz')->latest('id');
+
+        if (auth()->check()) {
+            return $query->where('user_id', auth()->id());
+        }
+
+        $sessionResultIds = session('quiz_result_ids', []);
+
+        return $query->whereIn('id', $sessionResultIds);
+    }
+
+    private function canViewResult(Result $result): bool
+    {
+        if (auth()->check()) {
+            return (int) $result->user_id === (int) auth()->id();
+        }
+
+        return in_array($result->id, session('quiz_result_ids', []), true);
     }
 }
