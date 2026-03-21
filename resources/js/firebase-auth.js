@@ -1,15 +1,12 @@
 import { initializeApp } from 'firebase/app';
 import {
-  createUserWithEmailAndPassword,
   getAuth,
   getRedirectResult,
   GoogleAuthProvider,
   onAuthStateChanged,
-  signInWithEmailAndPassword,
   signInWithPopup,
   signInWithRedirect,
   signOut,
-  updateProfile,
 } from 'firebase/auth';
 
 const firebaseConfig = {
@@ -28,6 +25,32 @@ const googleProvider = new GoogleAuthProvider();
 
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 
+const ROUTES = {
+  login: '/login',
+  logout: '/logout',
+  session: '/auth/session',
+  localLogin: '/auth/login-local',
+  localRegister: '/auth/register-local',
+  googleSync: '/auth/google-sync',
+};
+
+const SELECTORS = {
+  authMessage: '#authMessage',
+  authTabLogin: '#authTabLogin',
+  authTabRegister: '#authTabRegister',
+  loginForm: '#loginForm',
+  registerForm: '#registerForm',
+  loginUsername: '#loginUsername',
+  loginPassword: '#loginPassword',
+  registerName: '#registerName',
+  registerPassword: '#registerPassword',
+  registerPasswordConfirmation: '#registerPasswordConfirmation',
+  googleAuthBtn: '#googleAuthBtn',
+  authEmail: '[data-auth-email]',
+  logoutButton: '[data-auth-logout]',
+  csrfToken: 'meta[name="csrf-token"]',
+};
+
 function qs(selector) {
   return document.querySelector(selector);
 }
@@ -42,7 +65,7 @@ function clearFirebaseUidCookie() {
 }
 
 function showMessage(type, text) {
-  const el = qs('#authMessage');
+  const el = qs(SELECTORS.authMessage);
   if (!el) return;
 
   el.classList.remove('hidden', 'bg-red-50', 'text-red-700', 'bg-green-50', 'text-green-700');
@@ -63,10 +86,10 @@ function getRedirectTarget() {
 }
 
 function setAuthTab(mode) {
-  const loginTab = qs('#authTabLogin');
-  const registerTab = qs('#authTabRegister');
-  const loginForm = qs('#loginForm');
-  const registerForm = qs('#registerForm');
+  const loginTab = qs(SELECTORS.authTabLogin);
+  const registerTab = qs(SELECTORS.authTabRegister);
+  const loginForm = qs(SELECTORS.loginForm);
+  const registerForm = qs(SELECTORS.registerForm);
 
   if (!loginTab || !registerTab || !loginForm || !registerForm) return;
 
@@ -84,14 +107,8 @@ function setAuthTab(mode) {
   registerTab.classList.toggle('text-gray-500', isLogin);
 }
 
-function getFirebaseErrorMessage(errorCode) {
+function getGoogleAuthErrorMessage(errorCode) {
   const map = {
-    'auth/email-already-in-use': 'Email này đã được đăng ký.',
-    'auth/invalid-email': 'Email không hợp lệ.',
-    'auth/user-not-found': 'Không tìm thấy tài khoản.',
-    'auth/wrong-password': 'Mật khẩu không đúng.',
-    'auth/invalid-credential': 'Thông tin đăng nhập không đúng.',
-    'auth/weak-password': 'Mật khẩu quá yếu (ít nhất 6 ký tự).',
     'auth/popup-closed-by-user': 'Bạn đã đóng cửa sổ đăng nhập Google.',
     'auth/popup-blocked': 'Trình duyệt đã chặn popup. Hệ thống sẽ chuyển sang chế độ đăng nhập redirect.',
     'auth/operation-not-allowed': 'Google Sign-In chưa được bật trong Firebase Console (Authentication > Sign-in method).',
@@ -99,39 +116,69 @@ function getFirebaseErrorMessage(errorCode) {
     'auth/network-request-failed': 'Lỗi mạng, vui lòng kiểm tra kết nối internet và thử lại.',
   };
 
-  return map[errorCode] || 'Có lỗi xảy ra. Vui lòng thử lại.';
+  return map[errorCode] || 'Đăng nhập Google thất bại. Vui lòng thử lại.';
 }
 
-function buildInternalEmail(username) {
-  const base = String(username || '')
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9_]/g, '');
+async function postJson(url, body) {
+  const csrfToken = document.querySelector(SELECTORS.csrfToken)?.content || '';
 
-  const safeBase = base || 'user';
-  return `${safeBase}.${Date.now()}@local.quiz`;
-}
-
-async function syncLocalUser({ name, password, firebaseUid, email }) {
-  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
-
-  const response = await fetch('/auth/register-sync', {
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'Accept': 'application/json',
       'X-CSRF-TOKEN': csrfToken,
     },
-    body: JSON.stringify({
-      name,
-      password,
-      firebase_uid: firebaseUid,
-      email,
-    }),
+    body: JSON.stringify(body),
+  });
+
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    let message = payload?.message || 'Yêu cầu không hợp lệ.';
+    if (payload?.errors) {
+      const firstError = Object.values(payload.errors)[0];
+      if (Array.isArray(firstError) && firstError[0]) {
+        message = firstError[0];
+      }
+    }
+    throw new Error(message);
+  }
+
+  return payload;
+}
+
+async function getSessionStatus() {
+  const response = await fetch(ROUTES.session, {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/json',
+    },
   });
 
   if (!response.ok) {
-    throw new Error('sync-local-user-failed');
+    return { authenticated: false };
   }
+
+  return response.json();
+}
+
+async function syncGoogleSession(user) {
+  if (!user?.uid) return null;
+
+  const payload = await postJson(ROUTES.googleSync, {
+    firebase_uid: user.uid,
+    email: user.email || `${user.uid}@google.local`,
+    name: user.displayName || '',
+  });
+
+  if (payload?.owner_uid) {
+    setFirebaseUidCookie(payload.owner_uid);
+  } else {
+    setFirebaseUidCookie(user.uid);
+  }
+
+  return payload;
 }
 
 export function setupAuthPage() {
@@ -140,50 +187,76 @@ export function setupAuthPage() {
   const initialMode = document.body.dataset.authMode === 'register' ? 'register' : 'login';
   setAuthTab(initialMode);
 
-  const loginTab = qs('#authTabLogin');
-  const registerTab = qs('#authTabRegister');
+  const loginTab = qs(SELECTORS.authTabLogin);
+  const registerTab = qs(SELECTORS.authTabRegister);
 
   loginTab?.addEventListener('click', () => setAuthTab('login'));
   registerTab?.addEventListener('click', () => setAuthTab('register'));
 
-  const loginForm = qs('#loginForm');
-  const registerForm = qs('#registerForm');
-  const googleBtn = qs('#googleAuthBtn');
+  const loginForm = qs(SELECTORS.loginForm);
+  const registerForm = qs(SELECTORS.registerForm);
+  const googleBtn = qs(SELECTORS.googleAuthBtn);
 
-  getRedirectResult(auth).catch((error) => {
-    showMessage('error', getFirebaseErrorMessage(error.code));
+  getSessionStatus().then((session) => {
+    if (session?.authenticated) {
+      if (session.owner_uid) {
+        setFirebaseUidCookie(session.owner_uid);
+      }
+      window.location.href = getRedirectTarget();
+    }
   });
 
+  getRedirectResult(auth)
+    .then(async (result) => {
+      if (result?.user) {
+        await syncGoogleSession(result.user);
+        window.location.href = getRedirectTarget();
+      }
+    })
+    .catch((error) => {
+      showMessage('error', getGoogleAuthErrorMessage(error.code));
+    });
+
+  // Do not auto-redirect on Firebase state for the login page.
+  // This app now uses local Laravel auth for username/password,
+  // and auto-redirect here can create a reload loop.
   onAuthStateChanged(auth, (user) => {
     if (user) {
       setFirebaseUidCookie(user.uid);
-      window.location.href = getRedirectTarget();
     }
   });
 
   loginForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
 
-    const email = qs('#loginEmail')?.value?.trim();
-    const password = qs('#loginPassword')?.value;
+    const username = qs(SELECTORS.loginUsername)?.value?.trim();
+    const password = qs(SELECTORS.loginPassword)?.value;
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const payload = await postJson(ROUTES.localLogin, {
+        username,
+        password,
+      });
+
+      if (payload?.owner_uid) {
+        setFirebaseUidCookie(payload.owner_uid);
+      }
+
       showMessage('success', 'Đăng nhập thành công, đang chuyển hướng...');
       window.location.href = getRedirectTarget();
     } catch (error) {
-      showMessage('error', getFirebaseErrorMessage(error.code));
+      showMessage('error', error?.message || 'Đăng nhập thất bại.');
     }
   });
 
   registerForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
 
-    const name = qs('#registerName')?.value?.trim();
-    const password = qs('#registerPassword')?.value;
-    const passwordConfirmation = qs('#registerPasswordConfirmation')?.value;
+    const username = qs(SELECTORS.registerName)?.value?.trim();
+    const password = qs(SELECTORS.registerPassword)?.value;
+    const passwordConfirmation = qs(SELECTORS.registerPasswordConfirmation)?.value;
 
-    if (!name) {
+    if (!username) {
       showMessage('error', 'Vui lòng nhập tên đăng nhập.');
       return;
     }
@@ -193,46 +266,38 @@ export function setupAuthPage() {
       return;
     }
 
-    const internalEmail = buildInternalEmail(name);
-
     try {
-      const credential = await createUserWithEmailAndPassword(auth, internalEmail, password);
-      if (name) {
-        await updateProfile(credential.user, { displayName: name });
-      }
-
-      await syncLocalUser({
-        name,
+      const payload = await postJson(ROUTES.localRegister, {
+        username,
         password,
-        firebaseUid: credential.user.uid,
-        email: internalEmail,
+        password_confirmation: passwordConfirmation,
       });
+
+      if (payload?.owner_uid) {
+        setFirebaseUidCookie(payload.owner_uid);
+      }
 
       showMessage('success', 'Đăng ký thành công, đang chuyển hướng...');
       window.location.href = getRedirectTarget();
     } catch (error) {
-      if (error?.message === 'sync-local-user-failed') {
-        showMessage('error', 'Không thể đồng bộ tài khoản vào hệ thống. Vui lòng thử lại.');
-        return;
-      }
-
-      showMessage('error', getFirebaseErrorMessage(error.code));
+      showMessage('error', error?.message || 'Đăng ký thất bại.');
     }
   });
 
   googleBtn?.addEventListener('click', async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
+      const credential = await signInWithPopup(auth, googleProvider);
+      await syncGoogleSession(credential.user);
       showMessage('success', 'Đăng nhập Google thành công, đang chuyển hướng...');
       window.location.href = getRedirectTarget();
     } catch (error) {
       if (error.code === 'auth/popup-blocked') {
-        showMessage('error', getFirebaseErrorMessage(error.code));
+        showMessage('error', getGoogleAuthErrorMessage(error.code));
         await signInWithRedirect(auth, googleProvider);
         return;
       }
 
-      showMessage('error', `${getFirebaseErrorMessage(error.code)} (Mã lỗi: ${error.code || 'unknown'})`);
+      showMessage('error', `${getGoogleAuthErrorMessage(error.code)} (Mã lỗi: ${error.code || 'unknown'})`);
     }
   });
 }
@@ -240,43 +305,61 @@ export function setupAuthPage() {
 export function setupAuthGuard() {
   if (document.body.dataset.authRequired !== 'true') return;
 
-  onAuthStateChanged(auth, (user) => {
-    if (!user) {
-      clearFirebaseUidCookie();
-      const redirectUrl = encodeURIComponent(window.location.pathname + window.location.search);
-      window.location.href = `/login?redirect=${redirectUrl}`;
+  getSessionStatus().then((session) => {
+    if (session?.authenticated) {
+      if (session.owner_uid) {
+        setFirebaseUidCookie(session.owner_uid);
+      }
+
+      const emailNode = document.querySelector(SELECTORS.authEmail);
+      if (emailNode) {
+        emailNode.textContent = session.display_name || 'Người dùng';
+      }
+
       return;
     }
 
-    setFirebaseUidCookie(user.uid);
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        clearFirebaseUidCookie();
+        const redirectUrl = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.href = `${ROUTES.login}?redirect=${redirectUrl}`;
+        return;
+      }
 
-    const emailNode = document.querySelector('[data-auth-email]');
-    if (emailNode) {
-      emailNode.textContent = user.displayName || user.email || 'Người dùng';
-    }
+      setFirebaseUidCookie(user.uid);
+
+      const emailNode = document.querySelector(SELECTORS.authEmail);
+      if (emailNode) {
+        emailNode.textContent = user.displayName || user.email || 'Người dùng';
+      }
+    });
   });
 }
 
 export function setupLogout() {
-  const logoutBtn = document.querySelector('[data-auth-logout]');
+  const logoutBtn = document.querySelector(SELECTORS.logoutButton);
   if (!logoutBtn) return;
 
   logoutBtn.addEventListener('click', async () => {
     try {
       // Clear server-side session
-      await fetch('/logout', {
-        method: 'POST',
+      await fetch(ROUTES.logout, {
+        method: 'GET',
         headers: {
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
-          'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
       });
     } catch (error) {
       console.error('Error calling logout endpoint:', error);
     }
 
-    // Sign out from Firebase
-    await signOut(auth);
+    // Sign out from Firebase (if there is a Firebase session)
+    try {
+      await signOut(auth);
+    } catch (error) {
+      // Ignore: local auth may be used without Firebase session.
+    }
     
     // Clear client-side cookie
     clearFirebaseUidCookie();
@@ -288,6 +371,6 @@ export function setupLogout() {
     } catch (e) {}
     
     // Redirect to login
-    window.location.href = '/login';
+    window.location.href = ROUTES.login;
   });
 }
