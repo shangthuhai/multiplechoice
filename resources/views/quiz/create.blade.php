@@ -1,193 +1,231 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tạo Đề Thi Mới</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        .question-card { transition: all 0.3s; border-left: 5px solid #0d6efd; }
-        .question-card:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        .btn-remove { position: absolute; top: 10px; right: 10px; }
-        .import-area { border: 2px dashed #bbb; padding: 30px; text-align: center; background: #f9f9f9; border-radius: 10px; cursor: pointer; }
-        .import-area:hover { background: #eef; border-color: #0d6efd; }
-    </style>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-light pb-5">
-
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold text-primary"><i class="fas fa-edit"></i> Tạo Đề Thi Mới</h2>
-        <a href="{{ route('quiz.index') }}" class="btn btn-outline-secondary">Quay lại danh sách</a>
-    </div>
-
-    @if($errors->any())
-        <div class="alert alert-danger">
-            <ul>@foreach($errors->all() as $error) <li>{{ $error }}</li> @endforeach</ul>
+<body class="bg-white" data-auth-required="true">
+    <!-- Navigation -->
+    <nav class="border-b border-gray-200 sticky top-0 bg-white z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex justify-between items-center">
+                <div>
+                    <a href="{{ route('quiz.index') }}" class="text-2xl font-bold text-gray-900">Quiz</a>
+                </div>
+                <a href="{{ route('quiz.index') }}" class="text-blue-600 hover:text-blue-700 font-medium">
+                    ← Danh sách
+                </a>
+            </div>
         </div>
-    @endif
+    </nav>
 
-    <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-success text-white fw-bold">
-            <i class="fas fa-file-upload"></i> Nhập nhanh từ File (Import)
-        </div>
-        <div class="card-body">
-            <div class="import-area" onclick="document.getElementById('fileInput').click()">
-                <i class="fas fa-cloud-upload-alt fa-3x text-secondary mb-3"></i>
-                <h5>Bấm vào đây để chọn file .txt</h5>
-                <p class="text-muted small">Quy tắc: Câu hỏi 1 dòng. Đáp án đúng bắt đầu bằng (*). Đáp án sai bắt đầu bằng (-)</p>
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <h1 class="text-4xl font-bold text-gray-900 mb-8">Tạo đề thi mới</h1>
+
+        @if($errors->any())
+            <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <h3 class="font-semibold text-red-800 mb-2">Có lỗi xảy ra:</h3>
+                <ul class="list-disc list-inside text-red-700 space-y-1">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        <!-- Import Section -->
+        <div class="card-lg p-6 mb-8">
+            <div class="mb-4">
+                <h2 class="text-xl font-bold text-gray-900 mb-2">Nhập từ file</h2>
+                <p class="text-gray-600 text-sm mb-4">Chọn file .txt để nhập nhanh câu hỏi. Quy tắc định dạng: Câu hỏi trên 1 dòng, đáp án đúng bắt đầu bằng (*), đáp án sai bắt đầu bằng (-).</p>
+            </div>
+            <div id="import-area" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
+                <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                <p class="text-gray-700 font-medium mb-1">Bấm để chọn file</p>
+                <p class="text-gray-500 text-sm">hoặc kéo thả file vào đây</p>
             </div>
             <input type="file" id="fileInput" accept=".txt" style="display: none;" onchange="handleFileUpload(this)">
         </div>
-    </div>
 
-    <form action="{{ route('quiz.store') }}" method="POST" id="quizForm">
-        @csrf
-        
-        <div class="card mb-4 shadow-sm">
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-8">
-                        <label class="form-label fw-bold">Tên bài thi:</label>
-                        <input type="text" name="title" class="form-control form-control-lg" placeholder="Ví dụ: Kiểm tra 1 tiết Toán" required>
+        <!-- Form Section -->
+        <form action="{{ route('quiz.store') }}" method="POST" id="quizForm" class="space-y-6">
+            @csrf
+            
+            <!-- Quiz Details -->
+            <div class="card-lg p-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">Thông tin bài thi</h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Tên bài thi *</label>
+                        <input type="text" name="title" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                               placeholder="Ví dụ: Kiểm tra Toán 10..." required>
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label fw-bold">Thời gian (phút):</label>
-                        <input type="number" name="minutes" class="form-control form-control-lg" value="15">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Thời gian (phút) *</label>
+                        <input type="number" name="minutes" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                               value="15" min="1" required>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div id="questions-container">
-            </div>
+            <!-- Questions Container -->
+            <div id="questions-container"></div>
 
-        <div class="d-grid gap-2 d-md-flex justify-content-md-center mt-4">
-            <button type="button" class="btn btn-secondary me-md-2" onclick="addQuestion()">
-                <i class="fas fa-plus-circle"></i> Thêm câu hỏi thủ công
-            </button>
-            <button type="submit" class="btn btn-primary btn-lg px-5">
-                <i class="fas fa-save"></i> LƯU ĐỀ THI
-            </button>
-        </div>
-    </form>
-</div>
-
-<script>
-    let qIndex = 0; // Biến đếm số câu hỏi
-
-    // Hàm 1: Thêm khung câu hỏi mới vào giao diện
-    function addQuestion(content = "", options = []) {
-        const container = document.getElementById('questions-container');
-        
-        // Nếu không có options truyền vào (thêm thủ công), tạo 4 ô trống
-        if (options.length === 0) {
-            options = [
-                {text: "", correct: true},
-                {text: "", correct: false},
-                {text: "", correct: false},
-                {text: "", correct: false}
-            ];
-        }
-
-        let optionsHTML = '';
-        options.forEach((opt, oIndex) => {
-            optionsHTML += `
-            <div class="input-group mb-2">
-                <div class="input-group-text">
-                    <input class="form-check-input mt-0" type="radio" 
-                           name="questions[${qIndex}][correct_option]" 
-                           value="${oIndex}" ${opt.correct ? 'checked' : ''}>
-                </div>
-                <input type="text" name="questions[${qIndex}][options][${oIndex}]" 
-                       class="form-control ${opt.correct ? 'text-success fw-bold' : ''}" 
-                       value="${opt.text}" placeholder="Đáp án ${oIndex + 1}" required>
-            </div>`;
-        });
-
-        const html = `
-        <div class="card mb-4 question-card shadow-sm" id="q-${qIndex}">
-            <div class="card-body position-relative">
-                <button type="button" class="btn btn-outline-danger btn-sm btn-remove" 
-                        onclick="this.closest('.card').remove()">
-                    <i class="fas fa-trash"></i>
+            <!-- Add Question Button -->
+            <div class="flex justify-between items-center gap-4">
+                <button type="button" class="btn-secondary" onclick="addQuestion()">
+                    + Thêm câu hỏi
                 </button>
+                <button type="submit" class="btn-primary px-8 py-3 font-semibold">
+                    Lưu đề thi
+                </button>
+            </div>
+        </form>
+    </main>
+
+    <script>
+        let qIndex = 0;
+
+        function addQuestion(content = "", options = []) {
+            const container = document.getElementById('questions-container');
+            
+            if (options.length === 0) {
+                options = [
+                    {text: "", correct: true},
+                    {text: "", correct: false},
+                    {text: "", correct: false},
+                    {text: "", correct: false}
+                ];
+            }
+
+            let optionsHTML = '';
+            options.forEach((opt, oIndex) => {
+                optionsHTML += `
+                <div class="flex items-start gap-3 mb-3">
+                    <input class="mt-2" type="radio" 
+                           name="questions[${qIndex}][correct_option]" 
+                           value="${oIndex}" ${opt.correct ? 'checked' : ''} required>
+                    <div class="flex-1">
+                        <input type="text" name="questions[${qIndex}][options][${oIndex}]" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${opt.correct ? 'font-semibold text-green-700 bg-green-50' : ''}" 
+                               value="${opt.text}" placeholder="Đáp án ${String.fromCharCode(65 + oIndex)}" required>
+                    </div>
+                </div>`;
+            });
+
+            const html = `
+            <div class="card-lg p-6 border-l-4 border-blue-500" id="q-${qIndex}">
+                <div class="flex justify-between items-start mb-4">
+                    <h3 class="text-lg font-bold text-gray-900">Câu hỏi số ${qIndex + 1}</h3>
+                    <button type="button" class="text-red-600 hover:text-red-700 font-medium" 
+                            onclick="document.getElementById('q-${qIndex}').remove()">
+                        Xóa
+                    </button>
+                </div>
                 
-                <h5 class="card-title text-primary">Câu hỏi số ${qIndex + 1}</h5>
-                <input type="text" name="questions[${qIndex}][question_text]" 
-                       class="form-control mb-3 fw-bold" 
-                       value="${content}" placeholder="Nhập nội dung câu hỏi..." required>
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Nội dung câu hỏi *</label>
+                    <input type="text" name="questions[${qIndex}][question_text]" 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                           value="${content}" placeholder="Nhập nội dung câu hỏi..." required>
+                </div>
                 
-                <div class="row">
-                    <div class="col-md-12">
-                        <label class="form-label text-muted small">Nhập các phương án (Tích chọn vào ô tròn đáp án đúng)</label>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-3">Chọn đáp án đúng *</label>
+                    <div class="space-y-2">
                         ${optionsHTML}
                     </div>
                 </div>
-            </div>
-        </div>`;
+            </div>`;
 
-        container.insertAdjacentHTML('beforeend', html);
-        qIndex++;
-    }
-
-    // Hàm 2: Xử lý khi người dùng chọn File
-    function handleFileUpload(input) {
-        const file = input.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const text = e.target.result;
-            parseAndPopulate(text);
-        };
-        reader.readAsText(file);
-    }
-
-    // Hàm 3: Phân tích nội dung file text
-    function parseAndPopulate(text) {
-        const lines = text.split(/\r\n|\n/);
-        let currentQuestion = null;
-        let currentOptions = [];
-        
-        // Xóa sạch câu hỏi cũ nếu muốn (hoặc giữ lại tùy ý)
-        // document.getElementById('questions-container').innerHTML = '';
-        // qIndex = 0;
-
-        lines.forEach(line => {
-            line = line.trim();
-            if (!line) return;
-
-            if (line.startsWith('*') || line.startsWith('+') || line.startsWith('-')) {
-                // Đây là đáp án
-                const isCorrect = (line.startsWith('*') || line.startsWith('+'));
-                const content = line.substring(1).trim();
-                if (currentQuestion) { // Chỉ thêm nếu đã có câu hỏi
-                    currentOptions.push({ text: content, correct: isCorrect });
-                }
-            } else {
-                // Đây là câu hỏi mới -> Lưu câu cũ trước
-                if (currentQuestion) {
-                    addQuestion(currentQuestion, currentOptions);
-                }
-                // Reset cho câu mới
-                currentQuestion = line;
-                currentOptions = [];
-            }
-        });
-
-        // Lưu câu cuối cùng
-        if (currentQuestion) {
-            addQuestion(currentQuestion, currentOptions);
+            container.insertAdjacentHTML('beforeend', html);
+            qIndex++;
         }
 
-        alert('Đã nhập dữ liệu thành công! Bạn hãy kiểm tra lại trước khi Lưu.');
-    }
+        function handleFileUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
 
-    // Tự động thêm 1 câu trống khi mới vào trang
-    document.addEventListener('DOMContentLoaded', () => {
-        // addQuestion(); 
-    });
-</script>
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                parseAndPopulate(text);
+            };
+            reader.readAsText(file);
+        }
 
+        function parseAndPopulate(text) {
+            const lines = text.split(/\r\n|\n/);
+            let currentQuestion = null;
+            let currentOptions = [];
+            
+            lines.forEach(line => {
+                line = line.trim();
+                if (!line) return;
+
+                if (line.startsWith('*') || line.startsWith('+') || line.startsWith('-')) {
+                    const isCorrect = (line.startsWith('*') || line.startsWith('+'));
+                    const content = line.substring(1).trim();
+                    if (currentQuestion) {
+                        currentOptions.push({ text: content, correct: isCorrect });
+                    }
+                } else {
+                    if (currentQuestion) {
+                        addQuestion(currentQuestion, currentOptions);
+                    }
+                    currentQuestion = line;
+                    currentOptions = [];
+                }
+            });
+
+            if (currentQuestion) {
+                addQuestion(currentQuestion, currentOptions);
+            }
+
+            alert('✓ Nhập dữ liệu thành công! Kiểm tra lại trước khi lưu.');
+        }
+
+        // Drag and drop support
+        const importArea = document.getElementById('import-area');
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            importArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            importArea.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            importArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight(e) {
+            importArea.classList.add('border-blue-400', 'bg-blue-50');
+        }
+
+        function unhighlight(e) {
+            importArea.classList.remove('border-blue-400', 'bg-blue-50');
+        }
+
+        importArea.addEventListener('drop', handleDrop, false);
+        importArea.addEventListener('click', () => document.getElementById('fileInput').click());
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            const input = document.getElementById('fileInput');
+            input.files = files;
+            handleFileUpload(input);
+        }
+    </script>
 </body>
 </html>

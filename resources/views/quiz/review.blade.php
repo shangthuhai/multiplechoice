@@ -1,92 +1,140 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <title>Xem lai bai thi</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        .option-item { border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 12px; }
-        .option-correct { border-color: #198754; background: #e9f7ef; }
-        .option-wrong { border-color: #dc3545; background: #fdeced; }
-        .pill { font-size: 12px; padding: 2px 8px; border-radius: 999px; }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xem lại bài thi</title>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-light">
-    <nav class="navbar navbar-dark bg-primary mb-4 shadow">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="{{ route('quiz.index') }}">MY QUIZ APP</a>
-            <div class="d-flex gap-2">
-                <a href="{{ route('quiz.results') }}" class="btn btn-outline-light">Bai da lam</a>
-                <a href="{{ route('quiz.index') }}" class="btn btn-light text-primary fw-bold">Danh sach de thi</a>
+<body class="bg-white" data-auth-required="true">
+    <!-- Navigation -->
+    <nav class="border-b border-gray-200 sticky top-0 bg-white z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex justify-between items-center">
+                <div>
+                    <a href="{{ route('quiz.index') }}" class="text-2xl font-bold text-gray-900">Quiz</a>
+                </div>
+                <div class="flex gap-3">
+                    <a href="{{ route('quiz.results') }}" class="text-gray-700 hover:text-gray-900 font-medium transition-colors">
+                        Lịch sử
+                    </a>
+                    <a href="{{ route('quiz.index') }}" class="text-blue-600 hover:text-blue-700 font-medium">
+                        Danh sách →
+                    </a>
+                </div>
             </div>
         </div>
     </nav>
 
-    <div class="container" style="max-width: 900px;">
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         @if(session('status'))
-            <div class="alert alert-success text-center fw-bold">{{ session('status') }}</div>
+            <div class="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-800 font-medium">
+                {{ session('status') }}
+            </div>
         @endif
 
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <!-- Result Header -->
+        <div class="card-lg p-6 mb-8">
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
                 <div>
-                    <h4 class="mb-1">{{ $result->quiz->title ?? 'Bai thi' }}</h4>
-                    <p class="text-muted mb-0">Hoan thanh luc: {{ $result->created_at->format('d/m/Y H:i') }}</p>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ $result->quiz->title ?? 'Bài thi' }}</h1>
+                    <p class="text-gray-600">Hoàn thành lúc: {{ $result->created_at->format('d/m/Y H:i') }}</p>
                 </div>
-                <div class="text-end">
-                    <span class="badge bg-success fs-6">Diem: {{ $result->score }} / {{ $result->total_questions }}</span>
+                <div class="px-6 py-3 bg-green-100 text-green-700 rounded-lg font-bold text-xl">
+                    Điểm: {{ $result->score }}/{{ $result->total_questions }}
                 </div>
             </div>
         </div>
 
-        @foreach($result->quiz->questions as $index => $question)
-            @php
-                $answer = $answersByQuestionId->get($question->id);
-                $selectedOptionId = $answer?->selected_option_id;
-                $correctOptionId = $answer?->correct_option_id;
-            @endphp
+        <!-- Questions Review -->
+        <div class="space-y-6">
+            @foreach($result->quiz->questions as $index => $question)
+                @php
+                    $answer = $answersByQuestionId->get($question->id);
+                    $selectedOptionId = $answer?->selected_option_id;
+                    $correctOptionId = $answer?->correct_option_id;
+                    $isCorrect = $answer?->is_correct;
+                @endphp
 
-            <div class="card border-0 shadow-sm mb-3">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start mb-3 gap-2">
-                        <h5 class="mb-0">Cau {{ $index + 1 }}: {{ $question->question_text }}</h5>
-                        @if($answer?->is_correct)
-                            <span class="badge bg-success">Dung</span>
-                        @else
-                            <span class="badge bg-danger">Sai</span>
-                        @endif
+                <div class="card-lg p-6">
+                    <!-- Question Header -->
+                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6">
+                        <h3 class="text-lg font-bold text-gray-900">
+                            <span class="text-gray-500">Câu {{ $index + 1 }}.</span> {{ $question->question_text }}
+                        </h3>
+                        <div class="flex-shrink-0">
+                            @if($isCorrect)
+                                <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                    </svg>
+                                    Đúng
+                                </span>
+                            @else
+                                <span class="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-semibold flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                                    </svg>
+                                    Sai
+                                </span>
+                            @endif
+                        </div>
                     </div>
 
-                    <div class="d-grid gap-2">
-                        @foreach($question->options as $option)
+                    <!-- Answer Feedback -->
+                    @if(!$selectedOptionId)
+                        <div class="p-4 bg-gray-50 rounded-lg text-gray-700 font-medium mb-4">
+                            <p class="mb-0">Bạn đã bỏ qua câu này.</p>
+                        </div>
+                    @endif
+
+                    <!-- Options List -->
+                    <div class="space-y-3">
+                        @foreach($question->options as $optionIndex => $option)
                             @php
-                                $classes = 'option-item';
-                                if ($option->id === $correctOptionId) {
-                                    $classes .= ' option-correct';
-                                } elseif ($selectedOptionId && $option->id === $selectedOptionId && $selectedOptionId !== $correctOptionId) {
-                                    $classes .= ' option-wrong';
-                                }
+                                $isSelectedOption = $selectedOptionId && $option->id === $selectedOptionId;
+                                $isCorrectOption = $option->id === $correctOptionId;
+                                $isWrongSelection = $isSelectedOption && !$isCorrectOption;
                             @endphp
 
-                            <div class="{{ $classes }} d-flex justify-content-between align-items-center">
-                                <span>{{ $option->option_text }}</span>
-                                <span>
-                                    @if($option->id === $correctOptionId)
-                                        <span class="pill bg-success text-white">Dap an dung</span>
-                                    @endif
-                                    @if($selectedOptionId && $option->id === $selectedOptionId)
-                                        <span class="pill bg-primary text-white">Ban chon</span>
-                                    @endif
-                                </span>
+                            <div class="p-4 border-2 rounded-lg transition-colors @if($isCorrectOption) bg-green-50 border-green-300 @elseif($isWrongSelection) bg-red-50 border-red-300 @else bg-white border-gray-200 @endif">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="flex items-start gap-3">
+                                        <span class="font-semibold text-gray-700 flex-shrink-0">{{ chr(65 + $optionIndex) }}.</span>
+                                        <span class="@if($isCorrectOption) text-green-700 font-medium @elseif($isWrongSelection) text-red-700 font-medium @else text-gray-800 @endif">
+                                            {{ $option->option_text }}
+                                        </span>
+                                    </div>
+                                    <div class="flex gap-2 flex-shrink-0">
+                                        @if($isCorrectOption)
+                                            <span class="px-2 py-1 bg-green-200 text-green-700 rounded text-xs font-semibold">
+                                                ✓ Đáp án đúng
+                                            </span>
+                                        @endif
+                                        @if($isSelectedOption && !$isCorrectOption)
+                                            <span class="px-2 py-1 bg-red-200 text-red-700 rounded text-xs font-semibold">
+                                                Bạn chọn
+                                            </span>
+                                        @elseif($isSelectedOption)
+                                            <span class="px-2 py-1 bg-blue-200 text-blue-700 rounded text-xs font-semibold">
+                                                Bạn chọn
+                                            </span>
+                                        @endif
+                                    </div>
+                                </div>
                             </div>
                         @endforeach
                     </div>
-
-                    @if(!$selectedOptionId)
-                        <p class="text-muted mt-2 mb-0"><em>Ban bo qua cau nay.</em></p>
-                    @endif
                 </div>
-            </div>
-        @endforeach
-    </div>
+            @endforeach
+        </div>
+
+        <!-- Back Button -->
+        <div class="mt-8 text-center">
+            <a href="{{ route('quiz.results') }}" class="text-blue-600 hover:text-blue-700 font-medium">
+                ← Quay lại lịch sử
+            </a>
+        </div>
+    </main>
 </body>
 </html>

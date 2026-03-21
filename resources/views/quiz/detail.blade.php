@@ -1,66 +1,55 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chi tiết đề thi</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            min-height: 100vh;
-            background:
-                radial-gradient(circle at 15% 20%, rgba(34, 197, 94, 0.24), transparent 30%),
-                radial-gradient(circle at 85% 15%, rgba(0, 194, 255, 0.24), transparent 30%),
-                linear-gradient(135deg, #0b1538, #111f4f);
-        }
-
-        .lobby-card {
-            max-width: 560px;
-            width: 100%;
-            border: 0;
-            border-radius: 22px;
-            background: #fff;
-            box-shadow: 0 28px 48px rgba(8, 17, 48, 0.34);
-        }
-
-        .badge-soft {
-            border-radius: 999px;
-            background: #eef4ff;
-            color: #28427c;
-            font-weight: 700;
-            padding: 8px 14px;
-            font-size: 13px;
-        }
-    </style>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="d-flex align-items-center justify-content-center">
-    <div class="card lobby-card text-center p-5">
-        <div class="mb-4">
-            <img src="https://cdn-icons-png.flaticon.com/512/3407/3407024.png" width="80" alt="icon">
-        </div>
-        <h2 class="fw-bold" style="color:#1b2559;">{{ $quiz->title }}</h2>
-        <p class="text-muted">Sẵn sàng vào trận chưa? Mỗi câu đều tính điểm, tập trung và chọn thật nhanh.</p>
-        
-        <div class="row mt-4 mb-4 g-3">
-            <div class="col-6">
-                <div class="p-3 rounded-3" style="background:#f4f7ff;">
-                    <h4 class="fw-bold mb-1">{{ $quiz->questions_count }}</h4>
-                    <small class="text-secondary">Câu hỏi</small>
+<body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen flex items-center justify-center" data-auth-required="true">
+    <div class="card-lg max-w-md w-full p-8">
+        <div class="text-center">
+            <div class="mb-6">
+                <svg class="w-20 h-20 mx-auto text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+            </div>
+
+            <h2 class="text-3xl font-bold text-gray-900 mb-2">{{ $quiz->title }}</h2>
+            <p class="text-gray-600 mb-8">Sẵn sàng chứ? Tập trung tối đa và chọn đáp án chính xác.</p>
+
+            <!-- Stats -->
+            <div class="grid grid-cols-2 gap-4 mb-8">
+                <div class="p-4 bg-blue-50 rounded-lg">
+                    <div class="text-2xl font-bold text-blue-600 mb-1">{{ $quiz->questions_count }}</div>
+                    <div class="text-sm text-gray-600">Câu hỏi</div>
+                </div>
+                <div class="p-4 bg-amber-50 rounded-lg">
+                    <div class="text-2xl font-bold text-amber-600 mb-1">{{ $quiz->minutes }}</div>
+                    <div class="text-sm text-gray-600">Phút</div>
                 </div>
             </div>
-            <div class="col-6">
-                <div class="p-3 rounded-3" style="background:#fff4e8;">
-                    <h4 class="fw-bold mb-1">{{ $quiz->minutes }}</h4>
-                    <small class="text-secondary">Phút</small>
-                </div>
+
+            <!-- Tags -->
+            <div class="flex flex-wrap justify-center gap-2 mb-8">
+                <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
+                    Trắc nghiệm 1 đáp án
+                </span>
+                <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-semibold">
+                    Tự chấm điểm
+                </span>
+            </div>
+
+            <!-- Actions -->
+            <div class="space-y-3">
+                <a href="{{ route('quiz.take', $quiz->id) }}" class="btn-primary w-full py-3 font-semibold text-center">
+                    Bắt đầu làm bài →
+                </a>
+                <a href="{{ route('quiz.index') }}" class="block px-4 py-2 text-gray-700 hover:text-gray-900 font-medium transition-colors">
+                    ← Quay lại danh sách
+                </a>
             </div>
         </div>
-
-        <div class="d-flex justify-content-center gap-2 mb-4">
-            <span class="badge-soft">Trắc nghiệm 1 đáp án</span>
-            <span class="badge-soft">Tự chấm điểm</span>
-        </div>
-
-        <a href="{{ route('quiz.take', $quiz->id) }}" class="btn btn-lg w-100 fw-bold text-white" style="background:#1f67ff;border-radius:14px;">BẮT ĐẦU LÀM BÀI</a>
-        <a href="{{ route('quiz.index') }}" class="btn btn-link text-muted mt-2">Quay lại danh sách</a>
     </div>
 </body>
 </html>

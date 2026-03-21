@@ -68,11 +68,13 @@ class QuizController extends Controller
         $score = 0;
         $total = $quiz->questions->count();
         $answers = $request->input('answers', []);
+        $firebaseUid = $this->currentFirebaseUid($request);
 
         DB::beginTransaction();
         try {
             $result = Result::create([
                 'user_id' => auth()->id(),
+                'firebase_uid' => $firebaseUid,
                 'quiz_id' => $quiz->id,
                 'score' => 0,
                 'total_questions' => $total,
@@ -100,7 +102,7 @@ class QuizController extends Controller
 
             $sessionResultIds = session('quiz_result_ids', []);
             array_unshift($sessionResultIds, $result->id);
-            session(['quiz_result_ids' => array_values(array_unique(array_slice($sessionResultIds, 0, 50)))]);
+            session(['quiz_result_ids' => array_values(array_unique(array_slice($sessionResultIds, 0, 100)))]);
 
             DB::commit();
         } catch (\Throwable $e) {
@@ -147,7 +149,24 @@ class QuizController extends Controller
             return $query->where('user_id', auth()->id());
         }
 
+        $firebaseUid = $this->currentFirebaseUid(request());
         $sessionResultIds = session('quiz_result_ids', []);
+
+        if (!empty($firebaseUid)) {
+            return $query->where(function ($q) use ($firebaseUid, $sessionResultIds) {
+                $q->where('firebase_uid', $firebaseUid);
+
+                if (!empty($sessionResultIds)) {
+                    // Allow legacy results created before firebase_uid existed.
+                    $q->orWhereIn('id', $sessionResultIds);
+                }
+            });
+        }
+
+        // Security: If no valid firebase_uid and no session IDs, return empty result
+        if (empty($sessionResultIds)) {
+            return $query->whereRaw('1 = 0');
+        }
 
         return $query->whereIn('id', $sessionResultIds);
     }
@@ -158,6 +177,33 @@ class QuizController extends Controller
             return (int) $result->user_id === (int) auth()->id();
         }
 
-        return in_array($result->id, session('quiz_result_ids', []), true);
+        $firebaseUid = $this->currentFirebaseUid(request());
+        $sessionResultIds = session('quiz_result_ids', []);
+
+        if (!empty($firebaseUid)) {
+            if ((string) $result->firebase_uid === (string) $firebaseUid) {
+                return true;
+            }
+
+            // Fallback for records created without firebase_uid.
+            return in_array($result->id, $sessionResultIds, true);
+        }
+
+        // Security: Deny access if no firebase_uid and result_id not in session
+        if (empty($sessionResultIds)) {
+            return false;
+        }
+
+        return in_array($result->id, $sessionResultIds, true);
+    }
+
+    private function currentFirebaseUid(Request $request): ?string
+    {
+        $uid = $request->cookie('quiz_firebase_uid');
+        if (!is_string($uid) || $uid === '') {
+            return null;
+        }
+
+        return $uid;
     }
 }

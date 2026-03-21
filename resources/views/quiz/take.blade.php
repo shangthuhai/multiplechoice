@@ -1,199 +1,137 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Đang làm bài: {{ $quiz->title }}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
-        :root {
-            --bg-1: #0b1538;
-            --bg-2: #12245a;
-            --panel: #ffffff;
-            --ink: #1a2558;
-            --muted: #6c7698;
-        }
-
-        body {
-            min-height: 100vh;
-            background:
-                radial-gradient(circle at 10% 10%, rgba(34, 197, 94, 0.2), transparent 28%),
-                radial-gradient(circle at 85% 8%, rgba(0, 194, 255, 0.2), transparent 30%),
-                linear-gradient(135deg, var(--bg-1), var(--bg-2));
-            color: var(--ink);
-        }
-
-        .top-bar {
-            background: rgba(8, 16, 45, 0.8);
-            backdrop-filter: blur(8px);
-        }
-
-        .layout-wrap {
-            margin-top: 98px;
-            margin-bottom: 36px;
-        }
-
-        .quiz-shell {
-            border: 0;
-            border-radius: 22px;
-            background: var(--panel);
-            box-shadow: 0 24px 48px rgba(8, 16, 45, 0.3);
-            overflow: hidden;
-        }
-
-        .quiz-head {
-            background: linear-gradient(90deg, #f4f8ff, #eefcff);
-            border-bottom: 1px solid #e9eef8;
-        }
-
-        .tracker-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
-            gap: 8px;
-        }
-
-        .tracker-item {
-            text-align: center;
-            font-weight: 800;
-            border: 1px solid #d9e2fb;
-            background: #fff;
-            border-radius: 10px;
-            color: #5f6a8c;
-            padding: 8px 0;
-            font-size: 13px;
-        }
-
-        .tracker-item.done {
-            background: #1f67ff;
-            border-color: #1f67ff;
-            color: #fff;
-        }
-
-        .question-card {
-            border: 1px solid #edf1fb;
-            border-radius: 16px;
-            background: #fff;
-        }
-
-        .question-title {
-            font-weight: 800;
-            color: var(--ink);
-        }
-
         .option-input {
             display: none;
         }
 
         .option-label {
+            position: relative;
             cursor: pointer;
-            border: 2px solid #e8edfb;
-            border-radius: 14px;
-            padding: 14px;
-            font-weight: 700;
-            background: #fff;
-            transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
-            width: 100%;
-        }
-
-        .option-label:hover {
-            transform: translateY(-2px);
-            border-color: #bfd1ff;
-            box-shadow: 0 8px 18px rgba(24, 51, 128, 0.12);
+            transition: all 0.2s ease;
         }
 
         .option-input:checked + .option-label {
-            border-color: #1f67ff;
-            background: #edf3ff;
-            color: #1b3d98;
-            box-shadow: 0 8px 18px rgba(31, 103, 255, 0.18);
+            border-color: #2563eb;
+            background: #eff6ff;
+            box-shadow: 0 0 0 2px #2563eb;
         }
 
-        .pill {
-            border-radius: 999px;
-            padding: 7px 14px;
-            font-size: 13px;
-            font-weight: 800;
+        .option-input:checked + .option-label::after {
+            content: "✓";
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #2563eb;
+            font-weight: 700;
         }
 
-        .pill-time {
-            background: #ffe8ce;
-            color: #9a5d08;
+        .tracker-item {
+            transition: all 0.2s ease;
         }
 
-        .pill-progress {
-            background: #dff4ff;
-            color: #0e5a77;
-        }
-
-        @media (max-width: 992px) {
-            .layout-wrap {
-                margin-top: 86px;
-            }
+        .tracker-item.done {
+            background: #2563eb;
+            border-color: #2563eb;
+            color: #ffffff;
         }
     </style>
 </head>
-<body>
-    <nav class="navbar fixed-top navbar-dark top-bar shadow-sm">
-        <div class="container">
-            <span class="navbar-brand mb-0 fw-bold">{{ $quiz->title }}</span>
-            <div class="d-flex align-items-center gap-2">
-                <span class="pill pill-progress" id="answeredCounter">Đã chọn 0 / {{ $quiz->questions->count() }}</span>
-                <span class="pill pill-time">{{ $quiz->minutes }} phút</span>
+<body class="bg-gray-50" data-auth-required="true">
+    <!-- Fixed Header -->
+    <header class="fixed top-0 w-full bg-white border-b border-gray-200 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-lg font-bold text-gray-900">{{ $quiz->title }}</h1>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div id="answeredCounter" class="text-sm font-medium text-gray-700">
+                        Đã chọn 0 / {{ $quiz->questions->count() }}
+                    </div>
+                    <div class="flex items-center gap-1 text-sm font-medium px-3 py-1 bg-amber-50 text-amber-700 rounded-full">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        {{ $quiz->minutes }} phút
+                    </div>
+                </div>
             </div>
         </div>
-    </nav>
+    </header>
 
-    <div class="container layout-wrap" style="max-width: 1080px;">
-        <form action="{{ route('quiz.submit', $quiz->id) }}" method="POST">
-            @csrf
+    <main class="pt-24 pb-12">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Question Tracker -->
+            <div class="mb-8 p-4 bg-white rounded-lg border border-gray-200">
+                <p class="text-xs font-semibold text-gray-500 mb-3 uppercase">Tiến độ</p>
+                <div class="grid grid-cols-12 gap-2">
+                    @foreach($quiz->questions as $index => $question)
+                        <div class="tracker-item h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded font-medium text-sm cursor-pointer" 
+                             data-question-id="{{ $question->id }}" 
+                             id="tracker-{{ $question->id }}">
+                            {{ $index + 1 }}
+                        </div>
+                    @endforeach
+                </div>
+            </div>
 
-            <div class="quiz-shell">
-                <div class="quiz-head p-3 p-md-4">
-                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                        <h5 class="mb-0 fw-bold">Vòng chơi cá nhân</h5>
-                        <small class="text-muted">Chọn đáp án phù hợp nhất cho mỗi câu hỏi</small>
+            <!-- Form -->
+            <form action="{{ route('quiz.submit', $quiz->id) }}" method="POST" class="space-y-6">
+                @csrf
+
+                <!-- Questions -->
+                @foreach($quiz->questions as $index => $question)
+                <div class="bg-white rounded-lg border border-gray-200 p-6 scroll-mt-28" data-question-id="{{ $question->id }}">
+                    <div class="mb-6">
+                        <div class="flex items-start justify-between gap-4 mb-2">
+                            <h3 class="text-lg font-bold text-gray-900">
+                                <span class="text-gray-500">Câu {{ $index + 1 }}.</span> {{ $question->question_text }}
+                            </h3>
+                        </div>
                     </div>
-                    <div class="tracker-grid">
-                        @foreach($quiz->questions as $index => $question)
-                            <div class="tracker-item" id="tracker-{{ $question->id }}">{{ $index + 1 }}</div>
+
+                    <!-- Options -->
+                    <div class="space-y-3">
+                        @foreach($question->options as $option)
+                        <div>
+                            <input type="radio" 
+                                   class="option-input answer-input"
+                                   data-question-id="{{ $question->id }}"
+                                   name="answers[{{ $question->id }}]"
+                                   id="opt-{{ $option->id }}"
+                                   value="{{ $option->id }}">
+
+                            <label class="option-label block p-4 border-2 border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 cursor-pointer transition-all" 
+                                   for="opt-{{ $option->id }}">
+                                <span class="font-semibold text-gray-700">{{ chr(64 + $loop->iteration) }}.</span>
+                                <span class="ml-2 text-gray-800">{{ $option->option_text }}</span>
+                            </label>
+                        </div>
                         @endforeach
                     </div>
                 </div>
+                @endforeach
 
-                <div class="p-3 p-md-4">
-                    @foreach($quiz->questions as $index => $question)
-                    <div class="question-card mb-4 p-3 p-md-4">
-                        <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
-                            <h5 class="question-title mb-0">Câu {{ $index + 1 }}. <span class="fw-normal">{{ $question->question_text }}</span></h5>
-                            <a class="btn btn-sm btn-outline-secondary" href="#top">Lên đầu</a>
-                        </div>
-
-                        <div class="row">
-                            @foreach($question->options as $option)
-                            <div class="col-md-6 mb-3">
-                                <input type="radio" class="option-input answer-input"
-                                       data-question-id="{{ $question->id }}"
-                                       name="answers[{{ $question->id }}]"
-                                       id="opt-{{ $option->id }}"
-                                       value="{{ $option->id }}">
-
-                                <label class="option-label" for="opt-{{ $option->id }}">
-                                    <span class="me-2">{{ chr(64 + $loop->iteration) }}.</span>{{ $option->option_text }}
-                                </label>
-                            </div>
-                            @endforeach
-                        </div>
-                    </div>
-                    @endforeach
-
-                    <div class="d-grid mt-2">
-                        <button type="submit" class="btn btn-lg fw-bold text-white" style="background:#1f67ff;border-radius:14px;"
-                                onclick="return confirm('Xác nhận nộp bài? Bạn vẫn có thể xem lại chi tiết sau khi nộp.')">
-                            NOP BAI VA XEM KET QUA
+                <!-- Submit Button -->
+                <div class="sticky bottom-0 bg-white border-t border-gray-200 p-6 -mx-4 sm:-mx-6 lg:-mx-8 mt-8">
+                    <div class="max-w-4xl mx-auto">
+                        <button type="submit" 
+                                onclick="return confirm('Xác nhận nộp bài? Bạn vẫn có thể xem lại chi tiết sau khi nộp.')"
+                                class="btn-primary w-full py-3 text-lg font-semibold">
+                            Nộp bài và xem kết quả
                         </button>
                     </div>
                 </div>
-            </div>
-        </form>
-    </div>
+            </form>
+        </div>
+    </main>
 
     <script>
         const answerInputs = document.querySelectorAll('.answer-input');
@@ -214,7 +152,7 @@
                 }
             });
 
-            answeredCounter.textContent = `Da chon ${answeredQuestionIds.size} / ${totalQuestions}`;
+            answeredCounter.textContent = `Đã chọn ${answeredQuestionIds.size} / ${totalQuestions}`;
         }
 
         answerInputs.forEach((input) => {
@@ -222,6 +160,16 @@
         });
 
         updateAnsweredState();
+
+        // Scroll to question when clicking tracker item
+        document.querySelectorAll('.tracker-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const questionElement = document.querySelector(`[data-question-id="${this.dataset.questionId}"]`);
+                if (questionElement) {
+                    questionElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
     </script>
 </body>
 </html>
