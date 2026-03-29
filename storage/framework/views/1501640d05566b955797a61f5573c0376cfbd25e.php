@@ -189,7 +189,6 @@
             alert('✓ Nhập dữ liệu thành công! Kiểm tra lại trước khi lưu.');
         }
 
-        // Drag and drop support
         const importArea = document.getElementById('import-area');
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
             importArea.addEventListener(eventName, preventDefaults, false);
@@ -228,4 +227,4 @@
         }
     </script>
 </body>
-</html><?php /**PATH C:\Users\0pham\Documents\GitHub\multiplechoice\resources\views/quiz/create.blade.php ENDPATH**/ ?>
+</html><?php ?>

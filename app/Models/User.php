@@ -50,6 +50,10 @@ class User extends Authenticatable
     protected static function booted()
     {
         static::creating(function (User $user) {
+            if (empty($user->name)) {
+                $user->name = $user->username ?: (explode('@', (string) $user->email)[0] ?? 'user');
+            }
+
             if (empty($user->username)) {
                 $base = $user->name ?: (explode('@', (string) $user->email)[0] ?? 'user');
                 $base = preg_replace('/[^a-zA-Z0-9_]/', '', (string) $base);
