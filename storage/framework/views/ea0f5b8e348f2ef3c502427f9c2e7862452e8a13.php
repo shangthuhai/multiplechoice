@@ -115,4 +115,4 @@
 </body>
 
 </html>
-<?php /**PATH C:\Users\0pham\Documents\GitHub\multiplechoice\resources\views/auth/index.blade.php ENDPATH**/ ?>
+<?php /**PATH C:\Users\0pham\Documents\GitHub\multiplechoice\resources\views\auth\index.blade.php ENDPATH**/ ?>

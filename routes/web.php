@@ -35,6 +35,9 @@ Route::middleware('auth')->group(function () {
 	Route::get('/', [QuizController::class, 'index'])->name('quiz.index'); // Trang chủ danh sách
 	Route::get('/quiz/create', [QuizController::class, 'create'])->name('quiz.create');
 	Route::post('/quiz/store', [QuizController::class, 'store'])->name('quiz.store');
+	Route::get('/quiz/{id}/edit', [QuizController::class, 'edit'])->name('quiz.edit');
+	Route::put('/quiz/{id}', [QuizController::class, 'update'])->name('quiz.update');
+	Route::delete('/quiz/{id}', [QuizController::class, 'destroy'])->name('quiz.destroy');
 
 	Route::get('/quiz/{id}', [QuizController::class, 'show'])->name('quiz.show'); // Trang chờ (Lobby)
 	Route::get('/quiz/{id}/take', [QuizController::class, 'take'])->name('quiz.take'); // Trang làm bài thực tế

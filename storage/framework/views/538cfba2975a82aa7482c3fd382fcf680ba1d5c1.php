@@ -64,6 +64,13 @@
                                 <a href="<?php echo e(route('quiz.review', $result->id)); ?>" class="btn-outline px-4 py-2 text-center">
                                     Xem chi tiết →
                                 </a>
+                                <form action="<?php echo e(route('quiz.results.destroy', $result->id)); ?>" method="POST" onsubmit="return confirm('Bạn có chắc muốn xóa bài làm này khỏi lịch sử?');">
+                                    <?php echo csrf_field(); ?>
+                                    <?php echo method_field('DELETE'); ?>
+                                    <button type="submit" class="px-4 py-2 text-center border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors w-full sm:w-auto">
+                                        Xóa
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     </div>
@@ -78,4 +85,4 @@
         <?php endif; ?>
     </main>
 </body>
-</html><?php /**PATH C:\Users\0pham\Documents\GitHub\multiplechoice\resources\views/quiz/results.blade.php ENDPATH**/ ?>
+</html><?php /**PATH C:\Users\0pham\Documents\GitHub\multiplechoice\resources\views\quiz\results.blade.php ENDPATH**/ ?>

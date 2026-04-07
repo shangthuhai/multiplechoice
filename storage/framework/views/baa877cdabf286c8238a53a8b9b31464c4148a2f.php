@@ -114,4 +114,4 @@
         </div>
     </nav>
 <?php endif; ?>
-<?php /**PATH C:\Users\0pham\Documents\GitHub\multiplechoice\vendor\laravel\framework\src\Illuminate\Pagination/resources/views/tailwind.blade.php ENDPATH**/ ?>
+<?php /**PATH C:\Users\0pham\Documents\GitHub\multiplechoice\vendor\laravel\framework\src\Illuminate\Pagination\resources\views\tailwind.blade.php ENDPATH**/ ?>

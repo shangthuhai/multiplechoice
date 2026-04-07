@@ -24,6 +24,95 @@ class QuizController extends Controller
         return view('quiz.create');
     }
 
+    public function edit($id)
+    {
+        $quiz = Quiz::with('questions.options')->findOrFail($id);
+
+        $editableQuestions = $quiz->questions->map(function ($question) {
+            return [
+                'question_text' => $question->question_text,
+                'options' => $question->options->map(function ($option) {
+                    return [
+                        'option_text' => $option->option_text,
+                        'is_correct' => (bool) $option->is_correct,
+                    ];
+                })->values(),
+            ];
+        })->values();
+
+        return view('quiz.edit', compact('quiz', 'editableQuestions'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|min:3|max:255',
+            'minutes' => 'required|integer|min:1|max:300',
+            'questions' => 'required|array|min:1',
+            'questions.*.question_text' => 'required|string|min:5|max:1000',
+            'questions.*.options' => 'required|array|min:2|max:6',
+            'questions.*.options.*' => 'required|string|min:1|max:500',
+            'questions.*.correct_option' => 'required|integer|min:0',
+        ]);
+
+        $quiz = Quiz::findOrFail($id);
+
+        DB::beginTransaction();
+        try {
+            $quiz->update([
+                'title' => $validated['title'],
+                'minutes' => (int) $validated['minutes'],
+            ]);
+
+            // Replace all questions/options in the quiz with the edited set.
+            $quiz->questions()->delete();
+
+            foreach ($validated['questions'] as $qData) {
+                $correctIndex = (int) $qData['correct_option'];
+                if (!array_key_exists($correctIndex, $qData['options'])) {
+                    DB::rollBack();
+
+                    return back()
+                        ->withInput()
+                        ->withErrors(['msg' => 'Đáp án đúng không hợp lệ ở một số câu hỏi.']);
+                }
+
+                $question = $quiz->questions()->create([
+                    'question_text' => $qData['question_text'],
+                ]);
+
+                foreach ($qData['options'] as $key => $optionText) {
+                    $question->options()->create([
+                        'option_text' => $optionText,
+                        'is_correct' => ((int) $key === $correctIndex) ? 1 : 0,
+                    ]);
+                }
+            }
+
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return back()
+                ->withInput()
+                ->withErrors(['msg' => 'Không thể cập nhật đề thi: ' . $e->getMessage()]);
+        }
+
+        return redirect()
+            ->route('quiz.index')
+            ->with('status', 'Đã cập nhật đề thi và câu hỏi bên trong.');
+    }
+
+    public function destroy($id)
+    {
+        $quiz = Quiz::findOrFail($id);
+        $quiz->delete();
+
+        return redirect()
+            ->route('quiz.index')
+            ->with('status', 'Đã xóa đề thi.');
+    }
+
     public function store(Request $request) {
         $request->validate(['title' => 'required', 'questions' => 'required|array']);
         

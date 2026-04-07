@@ -16,6 +16,11 @@
             transition: all 0.2s ease;
         }
 
+        .option-input:not(:checked) + .option-label:hover {
+            border-color: #60a5fa;
+            background: #dbeafe;
+        }
+
         .option-input:checked + .option-label {
             border-color: #2563eb;
             background: #eff6ff;
@@ -32,14 +37,46 @@
             font-weight: 700;
         }
 
+        html.dark .option-input:not(:checked) + .option-label:hover {
+            border-color: #60a5fa;
+            background: #1e293b;
+        }
+
+        html.dark .option-input:not(:checked) + .option-label:hover .text-gray-700,
+        html.dark .option-input:not(:checked) + .option-label:hover .text-gray-800 {
+            color: #e2e8f0 !important;
+        }
+
+        html.dark .option-input:checked + .option-label {
+            border-color: #60a5fa;
+            background: #1e3a8a;
+            box-shadow: 0 0 0 2px #60a5fa;
+        }
+
+        html.dark .option-input:checked + .option-label::after {
+            color: #dbeafe;
+        }
+
+        html.dark .option-input:checked + .option-label .text-gray-700,
+        html.dark .option-input:checked + .option-label .text-gray-800 {
+            color: #eff6ff !important;
+        }
+
         .tracker-item {
             transition: all 0.2s ease;
         }
 
         .tracker-item.done {
-            background: #2563eb;
-            border-color: #2563eb;
-            color: #ffffff;
+            background: #2563eb !important;
+            border-color: #2563eb !important;
+            color: #ffffff !important;
+        }
+
+        html.dark .tracker-item.done {
+            background: #3b82f6 !important;
+            border-color: #60a5fa !important;
+            color: #eff6ff !important;
+            box-shadow: 0 0 0 1px rgba(147, 197, 253, 0.35);
         }
     </style>
 </head>
@@ -88,7 +125,7 @@
 
                 <!-- Questions -->
                 @foreach($quiz->questions as $index => $question)
-                <div class="bg-white rounded-lg border border-gray-200 p-6 scroll-mt-28" data-question-id="{{ $question->id }}">
+                <div id="question-{{ $question->id }}" class="question-card bg-white rounded-lg border border-gray-200 p-6 scroll-mt-28" data-question-id="{{ $question->id }}">
                     <div class="mb-6">
                         <div class="flex items-start justify-between gap-4 mb-2">
                             <h3 class="text-lg font-bold text-gray-900">
@@ -108,7 +145,7 @@
                                    id="opt-{{ $option->id }}"
                                    value="{{ $option->id }}">
 
-                            <label class="option-label block p-4 border-2 border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 cursor-pointer transition-all" 
+                            <label class="option-label block p-4 border-2 border-gray-200 rounded-lg cursor-pointer transition-all" 
                                    for="opt-{{ $option->id }}">
                                 <span class="font-semibold text-gray-700">{{ chr(64 + $loop->iteration) }}.</span>
                                 <span class="ml-2 text-gray-800">{{ $option->option_text }}</span>
@@ -164,7 +201,7 @@
         // Scroll to question when clicking tracker item
         document.querySelectorAll('.tracker-item').forEach(item => {
             item.addEventListener('click', function() {
-                const questionElement = document.querySelector(`[data-question-id="${this.dataset.questionId}"]`);
+                const questionElement = document.getElementById('question-' + this.dataset.questionId);
                 if (questionElement) {
                     questionElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }

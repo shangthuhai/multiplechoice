@@ -140,4 +140,4 @@
         </section>
     </main>
 </body>
-</html><?php /**PATH C:\Users\0pham\Documents\GitHub\multiplechoice\resources\views/quiz/index.blade.php ENDPATH**/ ?>
+</html><?php /**PATH C:\Users\0pham\Documents\GitHub\multiplechoice\resources\views\quiz\index.blade.php ENDPATH**/ ?>

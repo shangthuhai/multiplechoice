@@ -212,4 +212,4 @@
         });
     </script>
 </body>
-</html><?php /**PATH C:\Users\0pham\Documents\GitHub\multiplechoice\resources\views/quiz/take.blade.php ENDPATH**/ ?>
+</html><?php /**PATH C:\Users\0pham\Documents\GitHub\multiplechoice\resources\views\quiz\take.blade.php ENDPATH**/ ?>

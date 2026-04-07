@@ -97,9 +97,29 @@
                             </div>
                         </div>
                         
-                        <a href="{{ route('quiz.show', $quiz->id) }}" class="btn-primary w-full text-center">
-                            Bắt đầu →
-                        </a>
+                        <div class="grid grid-cols-3 gap-2">
+                            <a href="{{ route('quiz.show', $quiz->id) }}" class="btn-primary text-center col-span-3 sm:col-span-1">
+                                Bắt đầu
+                            </a>
+                            <a
+                                href="{{ route('quiz.edit', $quiz->id) }}"
+                                class="px-4 py-2.5 border border-blue-200 text-blue-600 rounded-lg font-medium hover:bg-blue-50 transition-colors col-span-3 sm:col-span-1 text-center"
+                            >
+                                Sửa câu hỏi
+                            </a>
+                            <form
+                                action="{{ route('quiz.destroy', $quiz->id) }}"
+                                method="POST"
+                                class="col-span-3 sm:col-span-1"
+                                onsubmit="return confirm('Bạn có chắc chắn muốn xóa đề thi này? Hành động này không thể hoàn tác.');"
+                            >
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="w-full px-4 py-2.5 border border-red-200 text-red-600 rounded-lg font-medium hover:bg-red-50 transition-colors">
+                                    Xóa
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 @endforeach
             </div>
