@@ -41,6 +41,7 @@ Route::middleware('auth')->group(function () {
 	Route::post('/quiz/{id}/submit', [QuizController::class, 'submit'])->name('quiz.submit');
 	Route::get('/my-results', [QuizController::class, 'results'])->name('quiz.results');
 	Route::get('/my-results/{resultId}', [QuizController::class, 'review'])->name('quiz.review');
+	Route::delete('/my-results/{resultId}', [QuizController::class, 'destroyResult'])->name('quiz.results.destroy');
 
 	// Question routes - User's private questions
 	Route::prefix('/my-questions')->group(function () {

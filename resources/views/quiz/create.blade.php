@@ -120,11 +120,17 @@
             const html = `
             <div class="card-lg p-6 border-l-4 border-blue-500" id="q-${qIndex}">
                 <div class="flex justify-between items-start mb-4">
-                    <h3 class="text-lg font-bold text-gray-900">Câu hỏi số ${qIndex + 1}</h3>
-                    <button type="button" class="text-red-600 hover:text-red-700 font-medium" 
-                            onclick="document.getElementById('q-${qIndex}').remove()">
-                        Xóa
-                    </button>
+                    <h3 class="text-lg font-bold text-gray-900 question-order">Câu hỏi số ${qIndex + 1}</h3>
+                    <div class="flex items-center gap-3">
+                        <button type="button" class="text-blue-600 hover:text-blue-700 font-medium" 
+                                onclick="focusQuestionEditor(${qIndex})">
+                            Sửa
+                        </button>
+                        <button type="button" class="text-red-600 hover:text-red-700 font-medium" 
+                                onclick="removeQuestion(${qIndex})">
+                            Xóa
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="mb-4">
@@ -144,6 +150,43 @@
 
             container.insertAdjacentHTML('beforeend', html);
             qIndex++;
+            reindexQuestionLabels();
+        }
+
+        function focusQuestionEditor(questionIndex) {
+            const questionCard = document.getElementById(`q-${questionIndex}`);
+            if (!questionCard) return;
+
+            const questionInput = questionCard.querySelector(`input[name="questions[${questionIndex}][question_text]"]`);
+            if (questionInput) {
+                questionInput.focus();
+                questionInput.select();
+            }
+
+            questionCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            questionCard.classList.add('ring-2', 'ring-blue-200');
+            setTimeout(() => {
+                questionCard.classList.remove('ring-2', 'ring-blue-200');
+            }, 1200);
+        }
+
+        function removeQuestion(questionIndex) {
+            const questionCard = document.getElementById(`q-${questionIndex}`);
+            if (!questionCard) return;
+
+            if (!confirm('Bạn có chắc chắn muốn xóa câu hỏi này?')) {
+                return;
+            }
+
+            questionCard.remove();
+            reindexQuestionLabels();
+        }
+
+        function reindexQuestionLabels() {
+            const labels = document.querySelectorAll('#questions-container .question-order');
+            labels.forEach((label, index) => {
+                label.textContent = `Câu hỏi số ${index + 1}`;
+            });
         }
 
         function handleFileUpload(input) {

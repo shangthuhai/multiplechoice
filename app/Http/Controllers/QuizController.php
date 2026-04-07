@@ -123,6 +123,25 @@ class QuizController extends Controller
         return view('quiz.results', compact('results'));
     }
 
+    public function destroyResult($resultId)
+    {
+        $result = $this->resultsQuery()->whereKey($resultId)->firstOrFail();
+        $result->delete();
+
+        $sessionResultIds = session('quiz_result_ids', []);
+        if (!empty($sessionResultIds)) {
+            $sessionResultIds = array_values(array_filter(
+                $sessionResultIds,
+                fn ($id) => (int) $id !== (int) $resultId
+            ));
+            session(['quiz_result_ids' => $sessionResultIds]);
+        }
+
+        return redirect()
+            ->route('quiz.results')
+            ->with('status', 'Đã xóa bài làm khỏi lịch sử.');
+    }
+
     public function review($resultId)
     {
         $result = Result::with([
